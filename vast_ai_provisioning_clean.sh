@@ -15,7 +15,7 @@ APT_PACKAGES=(
 PIP_PACKAGES=(
     "safetensors"
     "huggingface_hub"
-    "xformers==0.0.25.post1"
+    "xformers==0.0.28.post1"
     "insightface"
     "onnxruntime-gpu"
 )
