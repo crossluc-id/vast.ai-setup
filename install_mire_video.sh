@@ -38,11 +38,31 @@ echo "Installing Python dependencies..."
 pip install --upgrade pip --quiet
 pip install -r requirements.txt --quiet
 
-# Install PyTorch with CUDA 12.1 support (if not already installed)
+# Detect CUDA version from environment or use default
+CUDA_VERSION=${CUDA_VERSION:-$(nvcc --version 2>/dev/null | grep "release" | sed 's/.*release \([0-9]\+\.[0-9]\+\).*/\1/' || echo "12.1")}
+PYTHON_VERSION=$(python3 --version | cut -d' ' -f2 | cut -d'.' -f1,2)
+
+echo "Detected environment: Python ${PYTHON_VERSION}, CUDA ${CUDA_VERSION}"
+
+# Install PyTorch with appropriate CUDA support (if not already installed)
 if ! python -c "import torch; print(torch.__version__)" 2>/dev/null; then
-    echo "Installing PyTorch with CUDA 12.1..."
-    pip uninstall torch torchvision torchaudio --yes --quiet
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --quiet
+    echo "Installing PyTorch with CUDA ${CUDA_VERSION} support..."
+    
+    # Determine PyTorch index URL based on CUDA version
+    if [[ "$CUDA_VERSION" == "12.1" ]] || [[ "$CUDA_VERSION" == "12.2" ]] || [[ "$CUDA_VERSION" == "12.3" ]] || [[ "$CUDA_VERSION" == "12.4" ]]; then
+        TORCH_INDEX="https://download.pytorch.org/whl/cu121"
+    elif [[ "$CUDA_VERSION" == "12.6" ]] || [[ "$CUDA_VERSION" == "12.8" ]] || [[ "$CUDA_VERSION" == "12.9" ]]; then
+        TORCH_INDEX="https://download.pytorch.org/whl/cu124"
+    else
+        # Default to CUDA 12.1 for compatibility
+        TORCH_INDEX="https://download.pytorch.org/whl/cu121"
+        echo "Using default CUDA 12.1 PyTorch build for compatibility"
+    fi
+    
+    pip uninstall torch torchvision torchaudio --yes --quiet 2>/dev/null || true
+    pip install torch torchvision torchaudio --index-url "$TORCH_INDEX" --quiet
+else
+    echo "PyTorch already installed: $(python -c 'import torch; print(torch.__version__)')"
 fi
 
 # Install essential packages
@@ -82,7 +102,7 @@ custom_nodes=(
     "https://github.com/FizzleDorf/ComfyUI_FizzNodes.git"
     "https://github.com/BadCafeCode/masquerade-nodes-comfyui.git"
     "https://github.com/jags111/efficiency-nodes-comfyui.git"
-    "https://github.com/spacepxl/ComfyUI-Dream-Project.git"
+    "https://github.com/alt-key-project/comfyui-dream-project.git"
     "https://github.com/kijai/ComfyUI-KJNodes.git"
 )
 
@@ -121,7 +141,7 @@ mkdir -p models/clip_vision
 mkdir -p models/animatediff_motion
 mkdir -p models/animatediff_motion_lora
 mkdir -p models/controlnet
-mkdir -p models/loras
+mkdir -p models/loras/LCM/SD1.5  # For LCM LoRA subdirectory structure
 mkdir -p models/upscale_models
 mkdir -p models/frame_interpolation
 
