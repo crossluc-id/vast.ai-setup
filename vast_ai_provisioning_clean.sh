@@ -15,10 +15,15 @@ APT_PACKAGES=(
 PIP_PACKAGES=(
     "safetensors"
     "huggingface_hub"
-    "xformers==0.0.28.post1"
     "insightface"
     "onnxruntime-gpu"
 )
+
+# PyTorch ecosystem versions - MUST match base image
+TORCH_VERSION="2.5.1+cu121"
+TORCHVISION_VERSION="0.20.1+cu121"
+TORCHAUDIO_VERSION="2.5.1+cu121"
+XFORMERS_VERSION="0.0.28.post3"
 
 NODES=(
     "https://github.com/ltdrdata/ComfyUI-Manager"
@@ -134,6 +139,9 @@ function provisioning_start() {
     # Rename files for workflow compatibility
     provisioning_post_process
     
+    # Lock PyTorch versions (must be last to prevent node requirements from breaking them)
+    provisioning_lock_torch_versions
+    
     provisioning_print_end
 }
 
@@ -170,6 +178,17 @@ function provisioning_get_pip_packages() {
     if [[ -n $PIP_PACKAGES ]]; then
         pip install --no-cache-dir ${PIP_PACKAGES[@]}
     fi
+}
+
+function provisioning_lock_torch_versions() {
+    printf "Locking PyTorch ecosystem versions...\n"
+    pip install --no-cache-dir --force-reinstall \
+        torch==${TORCH_VERSION} \
+        torchvision==${TORCHVISION_VERSION} \
+        torchaudio==${TORCHAUDIO_VERSION} \
+        xformers==${XFORMERS_VERSION} \
+        --index-url https://download.pytorch.org/whl/cu121
+    printf "PyTorch versions locked.\n"
 }
 
 function provisioning_get_nodes() {
