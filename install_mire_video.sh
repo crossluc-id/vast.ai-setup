@@ -50,6 +50,8 @@ echo "Installing additional packages..."
 pip install xformers==0.0.22 --quiet
 pip install insightface --quiet
 pip install onnxruntime-gpu --quiet
+pip install safetensors --quiet  # For model validation
+pip install huggingface_hub --quiet  # For alternative HuggingFace downloads
 
 # Install git-lfs for large file downloads
 if ! command -v git-lfs &> /dev/null; then
