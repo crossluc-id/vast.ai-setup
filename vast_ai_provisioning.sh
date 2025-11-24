@@ -317,28 +317,20 @@ function provisioning_post_process() {
 
 function provisioning_get_apt_packages() {
     if [[ -n $APT_PACKAGES ]]; then
-        printf "Installing system packages...\n"
         sudo $APT_INSTALL ${APT_PACKAGES[@]}
     fi
 }
 
 function provisioning_get_pip_packages() {
     if [[ -n $PIP_PACKAGES ]]; then
-        printf "Installing Python packages...\n"
         pip install --no-cache-dir ${PIP_PACKAGES[@]}
     fi
 }
 
 function provisioning_get_nodes() {
     for repo in "${NODES[@]}"; do
-        # Handle .git suffix
-        if [[ $repo == *.git ]]; then
-            dir="${repo##*/}"
-            dir="${dir%.git}"
-        else
-            dir="${repo##*/}"
-        fi
-        path="${COMFYUI_DIR}/custom_nodes/${dir}"
+        dir="${repo##*/}"
+        path="${COMFYUI_DIR}custom_nodes/${dir}"
         requirements="${path}/requirements.txt"
         
         if [[ -d $path ]]; then
@@ -375,16 +367,11 @@ function provisioning_get_files() {
 }
 
 function provisioning_print_header() {
-    printf "\n##############################################\n#                                            #\n#     MIRE Video Workflow Provisioning       #\n#                                            #\n#         This will take some time           #\n#                                            #\n# Your container will be ready on completion #\n#                                            #\n##############################################\n\n"
+    printf "\n##############################################\n#                                            #\n#          Provisioning container            #\n#                                            #\n#         This will take some time           #\n#                                            #\n# Your container will be ready on completion #\n#                                            #\n##############################################\n\n"
 }
 
 function provisioning_print_end() {
     printf "\nProvisioning complete:  Application will start now\n\n"
-    printf "MIRE Video Workflow Setup Summary:\n"
-    printf "  - Custom nodes: %d installed\n" "${#NODES[@]}"
-    printf "  - Checkpoint models: %d downloaded\n" "${#CHECKPOINT_MODELS[@]}"
-    printf "  - CLIP Vision models: %d downloaded\n" "${#CLIP_VISION_MODELS[@]}"
-    printf "  - All models ready for MIRE_video.json workflow\n\n"
 }
 
 function provisioning_has_valid_hf_token() {
@@ -421,15 +408,12 @@ function provisioning_has_valid_civitai_token() {
 
 # Download from $1 URL to $2 file path
 function provisioning_download() {
-    auth_token=""
-    
     if [[ -n $HF_TOKEN && $1 =~ ^https://([a-zA-Z0-9_-]+\.)?huggingface\.co(/|$|\?) ]]; then
         auth_token="$HF_TOKEN"
     elif [[ -n $CIVITAI_TOKEN && $1 =~ ^https://([a-zA-Z0-9_-]+\.)?civitai\.com(/|$|\?) ]]; then
         auth_token="$CIVITAI_TOKEN"
     fi
-    
-    if [[ -n $auth_token ]]; then
+    if [[ -n $auth_token ]];then
         wget --header="Authorization: Bearer $auth_token" -qnc --content-disposition --show-progress -e dotbytes="${3:-4M}" -P "$2" "$1"
     else
         wget -qnc --content-disposition --show-progress -e dotbytes="${3:-4M}" -P "$2" "$1"
