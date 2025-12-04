@@ -65,7 +65,7 @@ SAGEATTENTION_VERSION="2.2.0"
 
 CHECKPOINT_MODELS=(
     "https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors"
-    "https://huggingface.co/KamCastle/jugg/resolve/main/juggernaut_reborn.safetensors"
+    "https://civitai.com/api/download/models/274039?type=Model&format=SafeTensor&size=pruned&fp=fp16"
 )
 
 LORA_MODELS=(
