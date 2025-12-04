@@ -4,7 +4,7 @@ source /venv/main/bin/activate
 COMFYUI_DIR=${WORKSPACE}/ComfyUI
 
 # ============================================================================
-# CONFIGURATION - Unified MIRE + WanVideo Workflow (Audit-based v2)
+# CONFIGURATION - Unified MIRE + WanVideo Workflow (Audit-based v2.2)
 # ============================================================================
 
 APT_PACKAGES=(
@@ -24,6 +24,16 @@ PIP_PACKAGES=(
     "omegaconf"
     "imageio"
     "imageio-ffmpeg"
+    # KJNodes dependencies (prevents IMPORT FAILED)
+    "color-matcher"
+    "librosa"
+    "scipy"
+    "matplotlib"
+    # comfy_mtb dependencies
+    "qrcode"
+    "rich"
+    "cachetools"
+    "rembg"
 )
 
 NODES=(
@@ -47,6 +57,7 @@ NODES=(
     "https://github.com/M1kep/ComfyLiterals"
     "https://github.com/Pirog17000/Pirogs-Nodes"
     "https://github.com/Stability-AI/stability-ComfyUI-nodes"
+    "https://github.com/melMass/comfy_mtb"
 )
 
 # ============================================================================
@@ -84,8 +95,9 @@ IPADAPTER_MODELS=(
     "https://huggingface.co/h94/IP-Adapter/resolve/main/models/ip-adapter-plus_sd15.safetensors"
 )
 
+# FIXED: Corrected CLIP Vision URL
 CLIP_VISION_MODELS=(
-    "https://huggingface.co/laion/CLIP-ViT-H-14-laion2B-s32B-b79K/resolve/main/open_clip_pytorch_model.safetensors"
+    "https://huggingface.co/laion/CLIP-ViT-H-14-laion2B-s32B-b79K/resolve/main/open_clip_model.safetensors"
 )
 
 ANIMATEDIFF_MODELS=(
@@ -223,12 +235,32 @@ except: print('SageAttention: NOT INSTALLED')
 function provisioning_post_process() {
     printf "Renaming models for workflow compatibility...\n"
     
-    # Rename CLIP Vision model
-    local clip_src="${COMFYUI_DIR}/models/clip_vision/open_clip_pytorch_model.safetensors"
+    # =========================================================================
+    # CLIP Vision Model Renaming (FIXED: updated for new filename)
+    # =========================================================================
+    local clip_src="${COMFYUI_DIR}/models/clip_vision/open_clip_model.safetensors"
     local clip_dst="${COMFYUI_DIR}/models/clip_vision/CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
     if [[ -f "$clip_src" && ! -f "$clip_dst" ]]; then
         mv "$clip_src" "$clip_dst"
-        printf "  Renamed: CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors\n"
+        printf "  Renamed: open_clip_model.safetensors -> CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors\n"
+    fi
+    
+    # =========================================================================
+    # Juggernaut Reborn Renaming (Civitai download)
+    # =========================================================================
+    local checkpoints_dir="${COMFYUI_DIR}/models/checkpoints"
+    local juggernaut_dst="${checkpoints_dir}/juggernaut-reborn.safetensors"
+    
+    if [[ ! -f "$juggernaut_dst" ]]; then
+        for file in "${checkpoints_dir}"/*.safetensors; do
+            local basename=$(basename "$file")
+            # Match juggernaut patterns (case-insensitive)
+            if [[ "${basename,,}" == *juggernaut* && "$basename" != "juggernaut-reborn.safetensors" ]]; then
+                mv "$file" "$juggernaut_dst"
+                printf "  Renamed: %s -> juggernaut-reborn.safetensors\n" "$basename"
+                break
+            fi
+        done
     fi
 }
 
@@ -284,7 +316,7 @@ function provisioning_get_files() {
 
 function provisioning_print_header() {
     printf "\n##############################################\n#                                            #\n#          Provisioning container            #\n#                                            #\n#         This will take some time           #\n#                                            #\n# Your container will be ready on completion #\n#                                            #\n##############################################\n\n"
-    printf "Unified Workflow: MIRE + WanVideo VACE (v2)\n\n"
+    printf "Unified Workflow: MIRE + WanVideo VACE (v2.2)\n\n"
 }
 
 function provisioning_print_end() {
