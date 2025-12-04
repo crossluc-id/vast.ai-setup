@@ -4,11 +4,19 @@ source /venv/main/bin/activate
 COMFYUI_DIR=${WORKSPACE}/ComfyUI
 
 # ============================================================================
-# MIRE-ONLY PROVISIONING SCRIPT v1.0
+# MIRE-ONLY PROVISIONING SCRIPT v1.3
 # Steerable Motion + AnimateDiff + IPAdapter + SparseCtrl + Frame Interpolation
 # 
 # Removed: All WanVideo/VACE components
 # Optimized: For LiquidAF and Steerable Motion workflows
+#
+# v1.3 CHANGELOG:
+#   - Uncommented all camera motion LoRAs (zoom, pan, tilt, roll)
+#   - Added Detail Tweaker, epi_noiseoffset, Film Grain LoRAs
+#   - Added comfyui-frontend-package>=1.16.9 (Impact Pack compatibility)
+#   - Added ComfyUI-Rife-Tensorrt node (faster frame interpolation)
+#   - Added comfyui_controlnet_aux node (DWPose, OpenPose, Depth, etc.)
+#   - Added tensorrt, cuda-python pip packages
 # ============================================================================
 
 APT_PACKAGES=(
@@ -40,6 +48,15 @@ PIP_PACKAGES=(
     "rembg"
     # Frame Interpolation dependencies
     "cupy-cuda12x"
+    # =========================================================================
+    # [NEW v1.3] Impact Pack frontend compatibility fix
+    # =========================================================================
+    "comfyui-frontend-package>=1.16.9"
+    # =========================================================================
+    # [NEW v1.3] TensorRT dependencies for RIFE acceleration
+    # =========================================================================
+    "tensorrt"
+    "cuda-python"
 )
 
 # ============================================================================
@@ -60,9 +77,18 @@ NODES=(
     
     # Frame Interpolation
     "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation"
+    # =========================================================================
+    # [NEW v1.3] TensorRT-accelerated RIFE (2-5x faster frame interpolation)
+    # =========================================================================
+    "https://github.com/yuvraj108c/ComfyUI-Rife-Tensorrt"
     
     # IPAdapter
     "https://github.com/cubiq/ComfyUI_IPAdapter_plus"
+    
+    # =========================================================================
+    # [NEW v1.3] ControlNet Preprocessors (DWPose, OpenPose, Depth, Canny, etc.)
+    # =========================================================================
+    "https://github.com/Fannovel16/comfyui_controlnet_aux"
     
     # Prompt/Animation Scheduling
     "https://github.com/FizzleDorf/ComfyUI_FizzNodes"
@@ -108,6 +134,15 @@ LORA_MODELS=(
     "https://huggingface.co/wangfuyun/AnimateLCM/resolve/main/AnimateLCM_sd15_t2v_lora.safetensors"
     # Add Detail LoRA (commonly used in Steerable Motion)
     "https://civitai.com/api/download/models/62833"
+    # =========================================================================
+    # [NEW v1.3] Quality Enhancement LoRAs
+    # =========================================================================
+    # Detail Tweaker - adjust detail levels with positive/negative weights
+    "https://civitai.com/api/download/models/64729"
+    # epi_noiseoffset v2 - better contrast and darker images
+    "https://civitai.com/api/download/models/16576"
+    # Film Grain Control - adds authentic film grain texture
+    "https://civitai.com/api/download/models/169868"
 )
 
 # ============================================================================
@@ -171,15 +206,18 @@ ANIMATEDIFF_LORA_MODELS=(
     "https://huggingface.co/peteromallet/poms-funtime-mlora-emporium/resolve/main/LiquidAF-0-1.safetensors"
     "https://huggingface.co/peteromallet/poms-funtime-mlora-emporium/resolve/main/Smoooth-0-1.safetensors"
     "https://huggingface.co/peteromallet/poms-funtime-mlora-emporium/resolve/main/WAS26-0-1.safetensors"
-    # Official AnimateDiff camera motion LoRAs
-   #"https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_ZoomIn.ckpt"
-   #"https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_ZoomOut.ckpt"
-   #"https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_PanLeft.ckpt"
-   #"https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_PanRight.ckpt"
-   #"https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_TiltUp.ckpt"
-   #"https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_TiltDown.ckpt"
-   #"https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_RollingClockwise.ckpt"
-   #"https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_RollingAnticlockwise.ckpt"
+    # =========================================================================
+    # [UNCOMMENTED v1.3] Official AnimateDiff camera motion LoRAs
+    # NOTE: These only work with mm_sd_v15_v2 motion model
+    # =========================================================================
+    "https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_ZoomIn.ckpt"
+    "https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_ZoomOut.ckpt"
+    "https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_PanLeft.ckpt"
+    "https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_PanRight.ckpt"
+    "https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_TiltUp.ckpt"
+    "https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_TiltDown.ckpt"
+    "https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_RollingClockwise.ckpt"
+    "https://huggingface.co/guoyww/animatediff/resolve/main/v2_lora_RollingAnticlockwise.ckpt"
 )
 
 ### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
@@ -317,6 +355,51 @@ function provisioning_post_process() {
             fi
         done
     fi
+    
+    # =========================================================================
+    # [NEW v1.3] Detail Tweaker LoRA Renaming
+    # =========================================================================
+    local detail_tweaker_dst="${loras_dir}/detail_tweaker.safetensors"
+    if [[ ! -f "$detail_tweaker_dst" ]]; then
+        for file in "${loras_dir}"/*; do
+            local basename=$(basename "$file")
+            if [[ "${basename,,}" == *tweaker* && "$basename" != "detail_tweaker.safetensors" ]]; then
+                mv "$file" "$detail_tweaker_dst"
+                printf "  Renamed: %s -> detail_tweaker.safetensors\n" "$basename"
+                break
+            fi
+        done
+    fi
+    
+    # =========================================================================
+    # [NEW v1.3] epi_noiseoffset Renaming
+    # =========================================================================
+    local noiseoffset_dst="${loras_dir}/epiNoiseoffset_v2.safetensors"
+    if [[ ! -f "$noiseoffset_dst" ]]; then
+        for file in "${loras_dir}"/*; do
+            local basename=$(basename "$file")
+            if [[ "${basename,,}" == *noise* && "${basename,,}" == *offset* && "$basename" != "epiNoiseoffset_v2.safetensors" ]]; then
+                mv "$file" "$noiseoffset_dst"
+                printf "  Renamed: %s -> epiNoiseoffset_v2.safetensors\n" "$basename"
+                break
+            fi
+        done
+    fi
+    
+    # =========================================================================
+    # [NEW v1.3] Film Grain LoRA Renaming
+    # =========================================================================
+    local filmgrain_dst="${loras_dir}/filmGrainControl_sd15.safetensors"
+    if [[ ! -f "$filmgrain_dst" ]]; then
+        for file in "${loras_dir}"/*; do
+            local basename=$(basename "$file")
+            if [[ "${basename,,}" == *film* && "${basename,,}" == *grain* && "$basename" != "filmGrainControl_sd15.safetensors" ]]; then
+                mv "$file" "$filmgrain_dst"
+                printf "  Renamed: %s -> filmGrainControl_sd15.safetensors\n" "$basename"
+                break
+            fi
+        done
+    fi
 }
 
 function provisioning_get_apt_packages() {
@@ -371,7 +454,7 @@ function provisioning_get_files() {
 
 function provisioning_print_header() {
     printf "\n##############################################\n#                                            #\n#          Provisioning container            #\n#                                            #\n#         This will take some time           #\n#                                            #\n# Your container will be ready on completion #\n#                                            #\n##############################################\n\n"
-    printf "MIRE-ONLY: Steerable Motion + AnimateDiff (v1.0)\n"
+    printf "MIRE-ONLY: Steerable Motion + AnimateDiff (v1.3)\n"
     printf "No WanVideo/VACE components\n\n"
 }
 
