@@ -96,7 +96,6 @@ NODES=(
     # Utility Nodes
     "https://github.com/kijai/ComfyUI-KJNodes"
     "https://github.com/cubiq/ComfyUI_essentials"
-    "https://github.com/chrisgoringe/cg-use-everywhere"
     "https://github.com/melMass/comfy_mtb"
     "https://github.com/alt-key-project/comfyui-dream-project"
     "https://github.com/jamesWalker55/comfyui-various"
