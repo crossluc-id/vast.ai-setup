@@ -121,7 +121,7 @@ TRITON_VERSION="3.1.0"
 # ============================================================================
 # COMFYUI VERSION PINNING
 # ============================================================================
-COMFYUI_VERSION="0.3.25"  # Stable version, compatible with FizzNodes
+COMFYUI_VERSION="0.3.72"  # Stable version, compatible with FizzNodes
 
 # ============================================================================
 # CHECKPOINTS (SD 1.5 based for AnimateDiff)
