@@ -58,7 +58,35 @@ PIP_PACKAGES=(
     "tensorrt"
     "cuda-python"
 )
-
+# ============================================================================
+# [NEW] ComfyUI Version Pinning - MUST BE BEFORE NODE INSTALLATION
+# ============================================================================
+function comfyui_pin_version() {
+    printf "\n============================================\n"
+    printf "Pinning ComfyUI to stable version...\n"
+    printf "============================================\n"
+    
+    if [[ ! -d "${COMFYUI_DIR}" ]]; then
+        printf "ComfyUI not found, cloning...\n"
+        git clone https://github.com/comfyanonymous/ComfyUI.git "${COMFYUI_DIR}"
+    fi
+    
+    cd "${COMFYUI_DIR}"
+    
+    # Checkout stable version (0.2.8 - last known stable before breaking changes)
+    # OR use this for 0.3.x: git checkout 0.3.25
+    printf "Current version: $(git describe --tags 2>/dev/null || git rev-parse --short HEAD)\n"
+    git fetch --all --tags
+    git checkout 0.3.25  # Change this tag as needed
+    printf "New version: $(git describe --tags 2>/dev/null || git rev-parse --short HEAD)\n"
+    
+    # Install base requirements
+    if [[ -e requirements.txt ]]; then
+        pip install --no-cache-dir -r requirements.txt
+    fi
+    
+    printf "============================================\n\n"
+}
 # ============================================================================
 # CUSTOM NODES - Core Steerable Motion Stack
 # ============================================================================
@@ -224,6 +252,7 @@ ANIMATEDIFF_LORA_MODELS=(
 function provisioning_start() {
     provisioning_print_header
     provisioning_get_apt_packages
+    comfyui_pin_version
     provisioning_get_nodes
     provisioning_get_pip_packages
     
