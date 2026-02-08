@@ -1,6 +1,9 @@
 #!/bin/bash
 
 source /venv/main/bin/activate
+
+git config --global --add safe.directory '*'
+
 COMFYUI_DIR=${WORKSPACE}/ComfyUI
 
 # ============================================================================
@@ -58,35 +61,8 @@ PIP_PACKAGES=(
     "tensorrt"
     "cuda-python"
 )
-# ============================================================================
-# [NEW] ComfyUI Version Pinning - MUST BE BEFORE NODE INSTALLATION
-# ============================================================================
-function comfyui_pin_version() {
-    printf "\n============================================\n"
-    printf "Pinning ComfyUI to stable version...\n"
-    printf "============================================\n"
-    
-    if [[ ! -d "${COMFYUI_DIR}" ]]; then
-        printf "ComfyUI not found, cloning...\n"
-        git clone https://github.com/comfyanonymous/ComfyUI.git "${COMFYUI_DIR}"
-    fi
-    
-    cd "${COMFYUI_DIR}"
-    
-    # Checkout stable version (0.2.8 - last known stable before breaking changes)
-    # OR use this for 0.3.x: git checkout 0.3.25
-    printf "Current version: $(git describe --tags 2>/dev/null || git rev-parse --short HEAD)\n"
-    git fetch --all --tags
-    git checkout 0.3.25  # Change this tag as needed
-    printf "New version: $(git describe --tags 2>/dev/null || git rev-parse --short HEAD)\n"
-    
-    # Install base requirements
-    if [[ -e requirements.txt ]]; then
-        pip install --no-cache-dir -r requirements.txt
-    fi
-    
-    printf "============================================\n\n"
-}
+
+
 # ============================================================================
 # CUSTOM NODES - Core Steerable Motion Stack
 # ============================================================================
@@ -142,6 +118,11 @@ TORCHVISION_VERSION="0.20.1+cu121"
 TORCHAUDIO_VERSION="2.5.1+cu121"
 XFORMERS_VERSION="0.0.28.post3"
 TRITON_VERSION="3.1.0"
+
+# ============================================================================
+# COMFYUI VERSION PINNING
+# ============================================================================
+COMFYUI_VERSION="0.3.25"  # Stable version, compatible with FizzNodes
 
 # ============================================================================
 # CHECKPOINTS (SD 1.5 based for AnimateDiff)
@@ -251,8 +232,8 @@ ANIMATEDIFF_LORA_MODELS=(
 
 function provisioning_start() {
     provisioning_print_header
+    provisioning_pin_comfyui_version
     provisioning_get_apt_packages
-    comfyui_pin_version
     provisioning_get_nodes
     provisioning_get_pip_packages
     
@@ -288,6 +269,38 @@ function provisioning_start() {
     provisioning_lock_environment
     
     provisioning_print_end
+}
+
+function provisioning_pin_comfyui_version() {
+    printf "\n============================================\n"
+    printf "Pinning ComfyUI to version ${COMFYUI_VERSION}...\n"
+    printf "============================================\n"
+    
+    if [[ ! -d "${COMFYUI_DIR}" ]]; then
+        printf "ComfyUI not found, cloning...\n"
+        git clone https://github.com/comfyanonymous/ComfyUI.git "${COMFYUI_DIR}"
+    fi
+    
+    cd "${COMFYUI_DIR}"
+    
+    printf "Current git status:\n"
+    git log --oneline -1 2>/dev/null || echo "No git history"
+    
+    printf "\nFetching all tags...\n"
+    git fetch --all --tags
+    
+    printf "Checking out version ${COMFYUI_VERSION}...\n"
+    git checkout ${COMFYUI_VERSION}
+    
+    printf "New version:\n"
+    git log --oneline -1
+    
+    printf "\nInstalling ComfyUI base requirements...\n"
+    if [[ -e requirements.txt ]]; then
+        pip install --no-cache-dir -r requirements.txt
+    fi
+    
+    printf "============================================\n\n"
 }
 
 function provisioning_lock_environment() {
