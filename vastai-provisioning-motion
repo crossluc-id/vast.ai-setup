@@ -50,15 +50,15 @@ PIP_PACKAGES=(
     "cachetools"
     "rembg"
     # Frame Interpolation dependencies
-    "cupy-cuda12x"
+    "cupy-cuda12x==13.3.0"
     # =========================================================================
     # [NEW v1.3] Impact Pack frontend compatibility fix
     # =========================================================================
-    "comfyui-frontend-package>=1.16.9"
+    "comfyui-frontend-package>=1.18.9"
     # =========================================================================
     # [NEW v1.3] TensorRT dependencies for RIFE acceleration
     # =========================================================================
-    "cuda-python"
+    "cuda-python>=12.1,<12.2"
 )
 
 
@@ -121,7 +121,7 @@ TRITON_VERSION="3.1.0"
 # ============================================================================
 # COMFYUI VERSION PINNING
 # ============================================================================
-COMFYUI_VERSION="v0.3.72"  # Stable version, compatible with FizzNodes
+COMFYUI_VERSION="v0.3.75"  # Stable version, compatible with FizzNodes
 
 # ============================================================================
 # CHECKPOINTS (SD 1.5 based for AnimateDiff)
