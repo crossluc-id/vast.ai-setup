@@ -49,6 +49,7 @@ PIP_PACKAGES=(
     "rich"
     "cachetools"
     "rembg"
+    "pandas<2.2"
     # Frame Interpolation dependencies
     "cupy-cuda12x==13.3.0"
     # =========================================================================
